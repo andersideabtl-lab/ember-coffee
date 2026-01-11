@@ -15,6 +15,12 @@ export interface SubmitContactResult {
   data?: Contact;
   message?: string;
   error?: string;
+  fieldErrors?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    message?: string;
+  };
 }
 
 export async function submitContact(formData: ContactFormData): Promise<SubmitContactResult> {
@@ -22,21 +28,48 @@ export async function submitContact(formData: ContactFormData): Promise<SubmitCo
     // 입력 데이터 검증 (trim 후 빈 문자열도 체크)
     const trimmedName = formData.name?.trim() || '';
     const trimmedEmail = formData.email?.trim() || '';
+    const trimmedPhone = formData.phone?.trim() || '';
     const trimmedMessage = formData.message?.trim() || '';
 
-    if (!trimmedName || !trimmedEmail || !trimmedMessage) {
-      return {
-        success: false,
-        error: '이름, 이메일, 메시지는 필수 항목입니다.',
-      };
+    // 필드별 에러 메시지 수집
+    const fieldErrors: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      message?: string;
+    } = {};
+
+    // 이름 검증
+    if (!trimmedName) {
+      fieldErrors.name = '이름을 입력해 주세요.';
     }
 
-    // 이메일 형식 검증
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
+    // 이메일 검증
+    if (!trimmedEmail) {
+      fieldErrors.email = '올바른 이메일 주소를 입력해 주세요.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        fieldErrors.email = '올바른 이메일 주소를 입력해 주세요.';
+      }
+    }
+
+    // 연락처 검증
+    if (!trimmedPhone) {
+      fieldErrors.phone = '연락처를 입력해 주세요.';
+    }
+
+    // 메시지 검증
+    if (!trimmedMessage) {
+      fieldErrors.message = '문의 내용을 입력해 주세요.';
+    }
+
+    // 필드 에러가 있으면 반환
+    if (Object.keys(fieldErrors).length > 0) {
       return {
         success: false,
-        error: '올바른 이메일 형식을 입력해주세요.',
+        error: '입력한 내용을 확인해 주세요.',
+        fieldErrors,
       };
     }
 

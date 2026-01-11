@@ -16,20 +16,130 @@ export default function ContactForm() {
     phone: "",
     message: "",
   });
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    message?: string;
+  }>({});
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+
+  // 실시간 검증 함수
+  const validateField = (name: string, value: string) => {
+    const trimmedValue = value.trim();
+    
+    switch (name) {
+      case 'name':
+        if (!trimmedValue) {
+          setErrors((prev) => ({ ...prev, name: '이름을 입력해 주세요.' }));
+        } else {
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors.name;
+            return newErrors;
+          });
+        }
+        break;
+      
+      case 'email':
+        if (!trimmedValue) {
+          setErrors((prev) => ({ ...prev, email: '올바른 이메일 주소를 입력해 주세요.' }));
+        } else {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(trimmedValue)) {
+            setErrors((prev) => ({ ...prev, email: '올바른 이메일 주소를 입력해 주세요.' }));
+          } else {
+            setErrors((prev) => {
+              const newErrors = { ...prev };
+              delete newErrors.email;
+              return newErrors;
+            });
+          }
+        }
+        break;
+      
+      case 'phone':
+        if (!trimmedValue) {
+          setErrors((prev) => ({ ...prev, phone: '연락처를 입력해 주세요.' }));
+        } else {
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors.phone;
+            return newErrors;
+          });
+        }
+        break;
+      
+      case 'message':
+        if (!trimmedValue) {
+          setErrors((prev) => ({ ...prev, message: '문의 내용을 입력해 주세요.' }));
+        } else {
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors.message;
+            return newErrors;
+          });
+        }
+        break;
+      
+      default:
+        break;
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    const { name, value } = e.target;
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    
+    // 실시간 검증
+    if (name === 'name' || name === 'email' || name === 'phone' || name === 'message') {
+      validateField(name, value);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // 클라이언트 사이드 검증
+    const trimmedName = formData.name?.trim() || '';
+    const trimmedEmail = formData.email?.trim() || '';
+    const trimmedPhone = formData.phone?.trim() || '';
+    const trimmedMessage = formData.message?.trim() || '';
+    
+    const clientErrors: typeof errors = {};
+    
+    if (!trimmedName) {
+      clientErrors.name = '이름을 입력해 주세요.';
+    }
+    
+    if (!trimmedEmail) {
+      clientErrors.email = '올바른 이메일 주소를 입력해 주세요.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        clientErrors.email = '올바른 이메일 주소를 입력해 주세요.';
+      }
+    }
+    
+    if (!trimmedPhone) {
+      clientErrors.phone = '연락처를 입력해 주세요.';
+    }
+    
+    if (!trimmedMessage) {
+      clientErrors.message = '문의 내용을 입력해 주세요.';
+    }
+    
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      return;
+    }
     
     startTransition(async () => {
       const result = await submitContact(formData);
@@ -38,10 +148,16 @@ export default function ContactForm() {
         toast.success("문의가 성공적으로 접수되었습니다!");
         // 폼 초기화
         setFormData({ name: "", email: "", phone: "", message: "" });
+        setErrors({});
         // HTML 폼 리셋
         formRef.current?.reset();
       } else {
-        toast.error(result.error || "문의 접수 중 오류가 발생했습니다.");
+        // 서버에서 반환된 필드별 에러 표시
+        if (result.fieldErrors) {
+          setErrors(result.fieldErrors);
+        } else {
+          toast.error(result.error || "문의 접수 중 오류가 발생했습니다.");
+        }
       }
     });
   };
@@ -72,11 +188,18 @@ export default function ContactForm() {
                     id="name"
                     name="name"
                     type="text"
-                    required
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="이름을 입력해주세요"
+                    className={errors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? "name-error" : undefined}
                   />
+                  {errors.name && (
+                    <p id="name-error" className="text-sm text-red-600" role="alert">
+                      {errors.name}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -85,11 +208,18 @@ export default function ContactForm() {
                     id="email"
                     name="email"
                     type="email"
-                    required
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="example@email.com"
+                    className={errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
                   />
+                  {errors.email && (
+                    <p id="email-error" className="text-sm text-red-600" role="alert">
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -101,7 +231,15 @@ export default function ContactForm() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="010-1234-5678"
+                    className={errors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                    aria-invalid={!!errors.phone}
+                    aria-describedby={errors.phone ? "phone-error" : undefined}
                   />
+                  {errors.phone && (
+                    <p id="phone-error" className="text-sm text-red-600" role="alert">
+                      {errors.phone}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -109,12 +247,19 @@ export default function ContactForm() {
                   <Textarea
                     id="message"
                     name="message"
-                    required
                     value={formData.message}
                     onChange={handleChange}
                     placeholder="문의 내용을 입력해주세요"
                     rows={6}
+                    className={errors.message ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                    aria-invalid={!!errors.message}
+                    aria-describedby={errors.message ? "message-error" : undefined}
                   />
+                  {errors.message && (
+                    <p id="message-error" className="text-sm text-red-600" role="alert">
+                      {errors.message}
+                    </p>
+                  )}
                 </div>
 
                 <Button
