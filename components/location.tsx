@@ -49,16 +49,17 @@ export default function Location() {
 
           {/* 지도 영역 */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="w-full h-full min-h-[400px] bg-gray-200 flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <MapPin size={48} className="mx-auto mb-4 text-amber-700" />
-                <p>지도 영역</p>
-                <p className="text-sm mt-2">
-                  실제 지도 서비스(구글 맵, 카카오 맵 등)를<br />
-                  연동하여 사용할 수 있습니다
-                </p>
-              </div>
-            </div>
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3165.0235175518375!2d127.02761041531038!3d37.49794227980707!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x357ca1588f02c4b5%3A0x9b9e8e5b3e8b3e8b!2z7ISc7Jq47Yq567OE7IucIOqwleuCqOq1rCDthYzqs6XroZwg7Yq567OE7Iuc66GcIDI3Mw!5e0!3m2!1sko!2skr!4v1699999999999!5m2!1sko!2skr"
+              width="100%"
+              height="400"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="w-full min-h-[400px]"
+              title="Ember Coffee 위치"
+            />
           </div>
         </div>
       </div>
