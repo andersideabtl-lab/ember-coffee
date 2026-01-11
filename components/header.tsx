@@ -23,25 +23,25 @@ export default function Header() {
           <div className="hidden md:flex space-x-8">
             <Link
               href="#home"
-              className="text-gray-700 hover:text-amber-600 transition-colors"
+              className="text-gray-700 hover:text-amber-600 focus:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
             >
               홈
             </Link>
             <Link
               href="#menu"
-              className="text-gray-700 hover:text-amber-600 transition-colors"
+              className="text-gray-700 hover:text-amber-600 focus:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
             >
               메뉴
             </Link>
             <Link
               href="#location"
-              className="text-gray-700 hover:text-amber-600 transition-colors"
+              className="text-gray-700 hover:text-amber-600 focus:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
             >
               위치
             </Link>
             <Link
               href="#contact"
-              className="text-gray-700 hover:text-amber-600 transition-colors"
+              className="text-gray-700 hover:text-amber-600 focus:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
             >
               문의
             </Link>
@@ -57,35 +57,43 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Mobile Menu */}
+          {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-gray-200">
+          <div 
+            className="md:hidden mt-4 pb-4 border-t border-gray-200"
+            role="menu"
+            aria-label="모바일 네비게이션 메뉴"
+          >
             <div className="flex flex-col space-y-4 mt-4">
               <Link
                 href="#home"
-                className="text-gray-700 hover:text-amber-600 transition-colors"
+                className="text-gray-700 hover:text-amber-600 focus:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
+                role="menuitem"
               >
                 홈
               </Link>
               <Link
                 href="#menu"
-                className="text-gray-700 hover:text-amber-600 transition-colors"
+                className="text-gray-700 hover:text-amber-600 focus:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
+                role="menuitem"
               >
                 메뉴
               </Link>
               <Link
                 href="#location"
-                className="text-gray-700 hover:text-amber-600 transition-colors"
+                className="text-gray-700 hover:text-amber-600 focus:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
+                role="menuitem"
               >
                 위치
               </Link>
               <Link
                 href="#contact"
-                className="text-gray-700 hover:text-amber-600 transition-colors"
+                className="text-gray-700 hover:text-amber-600 focus:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 rounded px-2 py-1 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
+                role="menuitem"
               >
                 문의
               </Link>

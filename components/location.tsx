@@ -58,7 +58,8 @@ export default function Location() {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               className="w-full min-h-[400px]"
-              title="Ember Coffee 위치"
+              title="Ember Coffee 위치 지도"
+              aria-label="Ember Coffee 위치 지도: 서울특별시 강남구 테헤란로 123 엠버빌딩 1층"
             />
           </div>
         </div>

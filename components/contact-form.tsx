@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { submitContact } from "@/app/actions/contact";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -15,6 +16,8 @@ export default function ContactForm() {
     phone: "",
     message: "",
   });
+  const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -25,12 +28,22 @@ export default function ContactForm() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // 폼 제출 로직 (실제 프로젝트에서는 API 호출 등)
-    console.log("Form submitted:", formData);
-    toast.success("문의가 성공적으로 접수되었습니다.");
-    setFormData({ name: "", email: "", phone: "", message: "" });
+    
+    startTransition(async () => {
+      const result = await submitContact(formData);
+      
+      if (result.success) {
+        toast.success("문의가 성공적으로 접수되었습니다!");
+        // 폼 초기화
+        setFormData({ name: "", email: "", phone: "", message: "" });
+        // HTML 폼 리셋
+        formRef.current?.reset();
+      } else {
+        toast.error(result.error || "문의 접수 중 오류가 발생했습니다.");
+      }
+    });
   };
 
   return (
@@ -52,7 +65,7 @@ export default function ContactForm() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">이름</Label>
                   <Input
@@ -106,10 +119,12 @@ export default function ContactForm() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-amber-700 hover:bg-amber-800 text-white"
+                  className="w-full bg-amber-700 hover:bg-amber-800 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   size="lg"
+                  disabled={isPending}
+                  aria-disabled={isPending}
                 >
-                  문의하기
+                  {isPending ? "전송 중..." : "문의하기"}
                 </Button>
               </form>
             </CardContent>

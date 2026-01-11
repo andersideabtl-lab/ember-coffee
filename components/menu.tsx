@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const menuItems = [
@@ -60,12 +61,17 @@ export default function Menu() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {menuItems.map((item) => (
-            <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card 
+              key={item.id} 
+              className="overflow-hidden hover:shadow-lg transition-shadow focus-within:ring-2 focus-within:ring-amber-600 focus-within:ring-offset-2"
+            >
               <div className="relative h-48 w-full">
-                <img
+                <Image
                   src={item.image}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
+                  alt={`${item.name} 메뉴 이미지`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
                   loading="lazy"
                 />
               </div>
