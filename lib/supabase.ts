@@ -19,6 +19,7 @@ export type Contact = {
   phone?: string | null;
   message: string;
   status?: 'pending' | 'completed';
+  attachment_url?: string | null;
   created_at?: string;
   updated_at?: string;
 };

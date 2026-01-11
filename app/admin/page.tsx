@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Clock,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -366,6 +367,9 @@ export default function AdminPage() {
                       <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
                         상태
                       </th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                        첨부파일
+                      </th>
                       <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 w-24">
                         작업
                       </th>
@@ -435,6 +439,24 @@ export default function AdminPage() {
                             )}
                             {contact.status === 'completed' ? '처리 완료' : '대기 중'}
                           </Badge>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          {contact.attachment_url ? (
+                            <div className="flex items-center justify-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(contact.attachment_url || '', '_blank')}
+                                className="h-8 px-3"
+                                aria-label="첨부파일 보기"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                보기
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
                         </td>
                         <td className="px-4 py-4 text-center">
                           <div className="flex items-center justify-center gap-2">

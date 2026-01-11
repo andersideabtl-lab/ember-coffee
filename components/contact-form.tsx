@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { submitContact } from "@/app/actions/contact";
+import { X, Image as ImageIcon } from "lucide-react";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -24,6 +25,8 @@ export default function ContactForm() {
   }>({});
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // 실시간 검증 함수
   const validateField = (name: string, value: string) => {
@@ -104,6 +107,50 @@ export default function ContactForm() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    
+    if (!file) {
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      return;
+    }
+
+    // 이미지 파일만 허용
+    if (!file.type.startsWith('image/')) {
+      toast.error('이미지 파일만 업로드 가능합니다.');
+      e.target.value = '';
+      return;
+    }
+
+    // 파일 크기 제한 (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('파일 크기는 5MB 이하여야 합니다.');
+      e.target.value = '';
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // 미리보기 URL 생성
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    // 파일 입력 필드 초기화
+    const fileInput = document.getElementById('attachment') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -142,13 +189,25 @@ export default function ContactForm() {
     }
     
     startTransition(async () => {
-      const result = await submitContact(formData);
+      const formDataToSubmit = new FormData();
+      formDataToSubmit.append('name', formData.name);
+      formDataToSubmit.append('email', formData.email);
+      formDataToSubmit.append('phone', formData.phone || '');
+      formDataToSubmit.append('message', formData.message);
+      
+      if (selectedFile) {
+        formDataToSubmit.append('attachment', selectedFile);
+      }
+
+      const result = await submitContact(formDataToSubmit);
       
       if (result.success) {
         toast.success("문의가 성공적으로 접수되었습니다!");
         // 폼 초기화
         setFormData({ name: "", email: "", phone: "", message: "" });
         setErrors({});
+        setSelectedFile(null);
+        setPreviewUrl(null);
         // HTML 폼 리셋
         formRef.current?.reset();
       } else {
@@ -260,6 +319,47 @@ export default function ContactForm() {
                       {errors.message}
                     </p>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="attachment">파일 첨부 (이미지)</Label>
+                  <div className="space-y-2">
+                    <Input
+                      id="attachment"
+                      name="attachment"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="cursor-pointer"
+                    />
+                    {previewUrl && (
+                      <div className="relative inline-block mt-2">
+                        <div className="relative group">
+                          <img
+                            src={previewUrl}
+                            alt="미리보기"
+                            className="h-32 w-auto rounded-md border border-gray-300 object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveFile}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="파일 제거"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        {selectedFile && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    이미지 파일만 업로드 가능합니다. (최대 5MB)
+                  </p>
                 </div>
 
                 <Button
