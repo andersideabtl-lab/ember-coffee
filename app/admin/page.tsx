@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getContacts, deleteContact } from '@/app/actions/admin';
+import { getContacts, deleteContact, updateContactStatus, getContactStats, getDailyContacts } from '@/app/actions/admin';
 import { type Contact } from '@/lib/supabase';
 import { 
   Mail, 
@@ -12,12 +12,18 @@ import {
   Lock,
   RefreshCw,
   AlertCircle,
-  Trash2
+  Trash2,
+  CheckCircle2,
+  Clock,
+  BarChart3,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,6 +32,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [stats, setStats] = useState<{ total: number; today: number; pending: number; completed: number } | null>(null);
+  const [dailyData, setDailyData] = useState<Array<{ date: string; count: number }>>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,9 +68,32 @@ export default function AdminPage() {
     setLoading(false);
   };
 
+  const loadStats = async () => {
+    setStatsLoading(true);
+    try {
+      const [statsResult, dailyResult] = await Promise.all([
+        getContactStats(),
+        getDailyContacts(7),
+      ]);
+
+      if (statsResult.success && statsResult.data) {
+        setStats(statsResult.data);
+      }
+
+      if (dailyResult.success && dailyResult.data) {
+        setDailyData(dailyResult.data);
+      }
+    } catch (error) {
+      console.error('Stats loading error:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       loadContacts();
+      loadStats();
     }
   }, [isAuthenticated]);
 
@@ -81,8 +114,8 @@ export default function AdminPage() {
 
       if (result.success) {
         toast.success('문의 내역이 삭제되었습니다');
-        // 목록 즉시 갱신
-        await loadContacts();
+        // 목록 및 통계 즉시 갱신
+        await Promise.all([loadContacts(), loadStats()]);
       } else {
         toast.error(result.error || '문의 내역 삭제에 실패했습니다.');
       }
@@ -90,6 +123,30 @@ export default function AdminPage() {
       toast.error('예상치 못한 오류가 발생했습니다.');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleStatusUpdate = async (contactId: string, currentStatus: 'pending' | 'completed' | undefined) => {
+    if (!contactId) return;
+
+    const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+
+    setUpdatingId(contactId);
+
+    try {
+      const result = await updateContactStatus(contactId, newStatus);
+
+      if (result.success) {
+        toast.success(`상태가 '${newStatus === 'completed' ? '처리 완료' : '대기 중'}'으로 변경되었습니다`);
+        // 목록 및 통계 즉시 갱신
+        await Promise.all([loadContacts(), loadStats()]);
+      } else {
+        toast.error(result.error || '상태 업데이트에 실패했습니다.');
+      }
+    } catch (error) {
+      toast.error('예상치 못한 오류가 발생했습니다.');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -156,15 +213,93 @@ export default function AdminPage() {
               </p>
             </div>
             <Button
-              onClick={loadContacts}
-              disabled={loading}
+              onClick={() => {
+                loadContacts();
+                loadStats();
+              }}
+              disabled={loading || statsLoading}
               className="bg-amber-700 hover:bg-amber-800 text-white"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading || statsLoading ? 'animate-spin' : ''}`} />
               새로고침
             </Button>
           </div>
         </div>
+
+        {/* 통계 카드 섹션 */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">전체 문의</CardTitle>
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">누적 문의 건수</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">오늘의 문의</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.today}</div>
+                <p className="text-xs text-muted-foreground">오늘 접수된 문의</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">미처리 문의</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-amber-700">{stats.pending}</div>
+                <p className="text-xs text-muted-foreground">처리 대기 중인 문의</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* 차트 섹션 */}
+        {dailyData.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                최근 7일간 문의 추이
+              </CardTitle>
+              <CardDescription>일별 문의 접수 현황</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dailyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return `${date.getMonth() + 1}/${date.getDate()}`;
+                    }}
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return date.toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      });
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#b45309" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {loading && contacts.length === 0 ? (
           <Card>
@@ -228,6 +363,9 @@ export default function AdminPage() {
                           접수일시
                         </div>
                       </th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                        상태
+                      </th>
                       <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 w-24">
                         작업
                       </th>
@@ -279,20 +417,42 @@ export default function AdminPage() {
                             : '-'}
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => contact.id && handleDelete(contact.id, contact.name)}
-                            disabled={deletingId === contact.id || !contact.id}
-                            className="h-8 w-8 p-0"
-                            aria-label={`${contact.name}님의 문의 삭제`}
+                          <Badge
+                            variant={contact.status === 'completed' ? 'default' : 'secondary'}
+                            className={`cursor-pointer ${
+                              contact.status === 'completed'
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : 'bg-amber-600 hover:bg-amber-700 text-white'
+                            }`}
+                            onClick={() => contact.id && handleStatusUpdate(contact.id, contact.status)}
                           >
-                            {deletingId === contact.id ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            {updatingId === contact.id ? (
+                              <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                            ) : contact.status === 'completed' ? (
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
                             ) : (
-                              <Trash2 className="h-4 w-4" />
+                              <Clock className="h-3 w-3 mr-1" />
                             )}
-                          </Button>
+                            {contact.status === 'completed' ? '처리 완료' : '대기 중'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => contact.id && handleDelete(contact.id, contact.name)}
+                              disabled={deletingId === contact.id || !contact.id}
+                              className="h-8 w-8 p-0"
+                              aria-label={`${contact.name}님의 문의 삭제`}
+                            >
+                              {deletingId === contact.id ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}

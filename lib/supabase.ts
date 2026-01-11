@@ -18,5 +18,7 @@ export type Contact = {
   email: string;
   phone?: string | null;
   message: string;
+  status?: 'pending' | 'completed';
   created_at?: string;
+  updated_at?: string;
 };
