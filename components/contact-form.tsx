@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,7 +29,7 @@ export default function ContactForm() {
     e.preventDefault();
     // 폼 제출 로직 (실제 프로젝트에서는 API 호출 등)
     console.log("Form submitted:", formData);
-    alert("문의가 성공적으로 접수되었습니다. 곧 연락드리겠습니다.");
+    toast.success("문의가 성공적으로 접수되었습니다.");
     setFormData({ name: "", email: "", phone: "", message: "" });
   };
 
