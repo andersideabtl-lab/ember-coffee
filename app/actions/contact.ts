@@ -19,8 +19,12 @@ export interface SubmitContactResult {
 
 export async function submitContact(formData: ContactFormData): Promise<SubmitContactResult> {
   try {
-    // 입력 데이터 검증
-    if (!formData.name || !formData.email || !formData.message) {
+    // 입력 데이터 검증 (trim 후 빈 문자열도 체크)
+    const trimmedName = formData.name?.trim() || '';
+    const trimmedEmail = formData.email?.trim() || '';
+    const trimmedMessage = formData.message?.trim() || '';
+
+    if (!trimmedName || !trimmedEmail || !trimmedMessage) {
       return {
         success: false,
         error: '이름, 이메일, 메시지는 필수 항목입니다.',
@@ -29,7 +33,7 @@ export async function submitContact(formData: ContactFormData): Promise<SubmitCo
 
     // 이메일 형식 검증
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (!emailRegex.test(trimmedEmail)) {
       return {
         success: false,
         error: '올바른 이메일 형식을 입력해주세요.',
@@ -41,10 +45,10 @@ export async function submitContact(formData: ContactFormData): Promise<SubmitCo
       .from('contacts')
       .insert([
         {
-          name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
+          name: trimmedName,
+          email: trimmedEmail.toLowerCase(),
           phone: formData.phone?.trim() || null,
-          message: formData.message.trim(),
+          message: trimmedMessage,
         },
       ])
       .select()

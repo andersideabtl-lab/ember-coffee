@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getContacts } from '@/app/actions/admin';
+import { getContacts, deleteContact } from '@/app/actions/admin';
 import { type Contact } from '@/lib/supabase';
 import { 
   Mail, 
@@ -11,11 +11,13 @@ import {
   User, 
   Lock,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,6 +25,7 @@ export default function AdminPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +63,35 @@ export default function AdminPage() {
       loadContacts();
     }
   }, [isAuthenticated]);
+
+  const handleDelete = async (contactId: string, contactName: string) => {
+    if (!contactId) return;
+
+    // 확인 창 표시
+    const confirmed = window.confirm(
+      `"${contactName}"님의 문의 내역을 정말 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
+    );
+
+    if (!confirmed) return;
+
+    setDeletingId(contactId);
+
+    try {
+      const result = await deleteContact(contactId);
+
+      if (result.success) {
+        toast.success('문의 내역이 삭제되었습니다');
+        // 목록 즉시 갱신
+        await loadContacts();
+      } else {
+        toast.error(result.error || '문의 내역 삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      toast.error('예상치 못한 오류가 발생했습니다.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // 로그인 화면
   if (!isAuthenticated) {
@@ -196,6 +228,9 @@ export default function AdminPage() {
                           접수일시
                         </div>
                       </th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 w-24">
+                        작업
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -242,6 +277,22 @@ export default function AdminPage() {
                                 hour12: false,
                               })
                             : '-'}
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => contact.id && handleDelete(contact.id, contact.name)}
+                            disabled={deletingId === contact.id || !contact.id}
+                            className="h-8 w-8 p-0"
+                            aria-label={`${contact.name}님의 문의 삭제`}
+                          >
+                            {deletingId === contact.id ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
                         </td>
                       </tr>
                     ))}
